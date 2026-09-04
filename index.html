@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Défi Entr'aide 2026-2027 | Paroisse et Secours Catholique de Puteaux</title>
+<meta name="description" content="7e édition du Défi Entr'aide : 22 défis concrets au service des personnes les plus fragiles de Puteaux, à relever par un don ou par un peu de temps.">
+<meta property="og:title" content="Défi Entr'aide 2026-2027">
+<meta property="og:description" content="Choisissez un défi concret et agissez, par un don ou par votre temps, auprès des familles et des personnes les plus fragiles de Puteaux.">
+<meta property="og:type" content="website">
+
+<script>
+/* =========================================================================
+   CONFIGURATION : la seule chose à modifier.
+   URL_API : l'URL /exec de l'Apps Script attaché à la Google Sheet (voir GUIDE-site.md).
+   Laisser vide pour afficher les défis embarqués ci-dessous, sans compteurs.
+   ========================================================================= */
+const CONFIG = {
+  URL_API: "",
+  URL_HELLOASSO: "https://www.helloasso.com/associations/la-source-92",
+  EMAIL_CONTACT: "info@paroisseputeaux.com",
+  DATE_FIN_COLLECTE: "2026-11-16"   // après cette date : bandeau "collecte terminée", formulaire fermé
+};
+</script>
+
+<style>
+  :root{
+    --ink:#23303a; --navy:#1d4453; --navy2:#2c5868;
+    --gold:#b07a3f; --gold-soft:#c79a5e; --pill:#f3ece0;
+    --paper:#faf7f1; --card:#ffffff; --line:#e4ddd0; --muted:#6d6256;
+    --ok:#3f7d54; --ok-soft:#e5f0e8; --bar-bg:#eae3d5;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+  a{color:var(--gold)}
+  h1,h2,h3{font-family:var(--serif);font-weight:normal;margin:0}
+  p{margin:0 0 .8em}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  .sr{position:absolute;left:-9999px}
+
+  /* Bandeau d'état */
+  .notice{background:var(--gold);color:#fff;text-align:center;padding:8px 14px;font-size:.92rem}
+  .notice[hidden]{display:none}
+
+  /* Barre supérieure */
+  .topbar{background:#fff;border-bottom:1px solid var(--line)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:10px;padding-bottom:10px}
+  .topbar img{height:56px;width:auto}
+  .topbar .mid{text-align:center}
+  .topbar .k{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .topbar .n{font-family:var(--serif);font-size:1.25rem;color:var(--navy)}
+
+  /* Navigation */
+  nav.main{position:sticky;top:0;z-index:20;background:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  nav.main .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:0;padding-bottom:0;scrollbar-width:none}
+  nav.main .wrap::-webkit-scrollbar{display:none}
+  nav.main a{color:#e8eef0;text-decoration:none;padding:12px 14px;white-space:nowrap;font-size:.9rem;border-bottom:3px solid transparent}
+  nav.main a:hover,nav.main a.on{border-bottom-color:var(--gold-soft);color:#fff}
+
+  /* Hero */
+  .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:48px 0 40px}
+  .hero .eyebrow{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft)}
+  .hero h1{font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.05;margin:8px 0 4px}
+  .hero .ed{font-family:var(--serif);font-size:1.4rem;color:var(--gold-soft)}
+  .hero .lead{max-width:640px;font-size:1.08rem;margin:18px 0 26px;color:#e8eef0}
+  .global{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:22px 24px;max-width:640px}
+  .global .lbl{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft)}
+  .global .big{font-family:var(--serif);font-size:2.4rem;line-height:1.1;margin:6px 0 4px}
+  .global .big small{font-size:1rem;font-family:var(--sans);color:#d7e0e3}
+  .bar{height:10px;background:rgba(255,255,255,.18);border-radius:999px;overflow:hidden;margin:10px 0 14px}
+  .bar>span{display:block;height:100%;width:0;background:var(--gold-soft);border-radius:999px;transition:width 1.2s ease}
+  .stats{display:flex;gap:26px;flex-wrap:wrap}
+  .stat .v{font-family:var(--serif);font-size:1.5rem}
+  .stat .t{font-size:.82rem;color:#d7e0e3}
+  .btn{display:inline-block;background:var(--gold);color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;border:0;cursor:pointer;font-size:1rem;font-family:var(--sans)}
+  .btn:hover{background:#9a6a35}
+  .btn.ghost{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
+  .btn.ghost:hover{background:var(--pill)}
+  .btn.sm{padding:9px 16px;font-size:.92rem}
+  .hero .cta{margin-top:16px}
+
+  /* Sections */
+  section.cat{padding:44px 0 8px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--gold-soft);padding-bottom:8px;margin-bottom:10px}
+  .sec-num{font-family:var(--serif);color:var(--gold);font-size:1.4rem}
+  .sec-title{font-size:1.65rem;color:var(--navy)}
+  .sec-intro{color:var(--muted);max-width:760px;margin-bottom:18px}
+
+  /* Accordéon défi */
+  .defi{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .defi.fin{border-color:#c9dccd}
+  .defi-head{display:grid;grid-template-columns:44px 1fr auto 20px;gap:12px;align-items:center;padding:14px 16px;cursor:pointer;background:none;border:0;width:100%;text-align:left;font:inherit;color:inherit}
+  .defi-head:hover{background:#fcfaf6}
+  .num{font-family:var(--serif);font-size:1.3rem;color:var(--gold);text-align:center}
+  .defi-head h3{font-size:1.08rem;color:var(--navy)}
+  .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px;font-size:.82rem;color:var(--muted)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:var(--pill);color:var(--gold)}
+  .badge.temps{background:#e6eef1;color:var(--navy)}
+  .badge.ok{background:var(--ok-soft);color:var(--ok)}
+  .mini{min-width:110px;text-align:right}
+  .mini .p{font-family:var(--serif);font-size:1.15rem;color:var(--navy)}
+  .mini .b{height:6px;background:var(--bar-bg);border-radius:999px;overflow:hidden;margin-top:4px}
+  .mini .b>span{display:block;height:100%;width:0;background:var(--gold);transition:width .9s ease}
+  .mini .b.done>span{background:var(--ok)}
+  .mini .t{font-size:.72rem;color:var(--muted)}
+  .chev{width:12px;height:12px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(45deg);transition:transform .25s;justify-self:end;margin-right:4px}
+  .defi.open .chev{transform:rotate(-135deg)}
+  .defi-body{display:none;padding:4px 16px 18px 72px;border-top:1px dashed var(--line)}
+  .defi.open .defi-body{display:block}
+  .defi-body p{margin:10px 0}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0;font-size:.95rem}
+  .kv dt{color:var(--muted);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
+  .kv dd{margin:0}
+  .prog{background:var(--pill);border-radius:10px;padding:12px 14px;margin:12px 0;max-width:420px}
+  .prog .p{font-family:var(--serif);font-size:1.4rem;color:var(--navy)}
+  .prog .b{height:8px;background:#fff;border-radius:999px;overflow:hidden;margin:6px 0 4px}
+  .prog .b>span{display:block;height:100%;width:0;background:var(--gold);transition:width .9s ease}
+  .prog .t{font-size:.82rem;color:var(--muted)}
+  .prog.done{background:var(--ok-soft)}
+  .prog.done .b>span{background:var(--ok)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .share{font-size:.85rem;color:var(--muted);background:none;border:0;cursor:pointer;text-decoration:underline;font-family:var(--sans)}
+  @media (max-width:640px){
+    .defi-head{grid-template-columns:34px 1fr 20px;padding:12px}
+    .mini{grid-column:2;text-align:left;min-width:0}
+    .chev{grid-row:1;grid-column:3}
+    .defi-body{padding-left:14px}
+    .topbar img{height:40px}
+    .topbar .n{font-size:1rem}
+  }
+
+  /* Participer */
+  .participer{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:40px 0;margin-top:30px}
+  .three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
+  .box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .box h3{font-size:1.1rem;color:var(--navy);margin-bottom:6px}
+  .box p{font-size:.95rem;margin:0}
+
+  /* Pages secondaires */
+  section.page{padding:44px 0 10px;max-width:760px}
+  section.page h2{font-size:1.65rem;color:var(--navy);border-bottom:2px solid var(--gold-soft);padding-bottom:8px;margin-bottom:14px}
+  section.page h3{font-size:1.15rem;color:var(--navy);margin:18px 0 6px}
+  .bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .bilan .c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .bilan .v{font-family:var(--serif);font-size:1.7rem;color:var(--navy)}
+  .bilan .t{font-size:.82rem;color:var(--muted)}
+  .signatures{margin-top:16px;font-style:italic;color:var(--muted)}
+
+  footer{background:var(--navy);color:#d7e0e3;margin-top:40px;padding:26px 0;font-size:.9rem}
+  footer a{color:#fff}
+  footer .sep{margin:0 8px;color:var(--gold-soft)}
+
+  /* Modale */
+  .overlay{position:fixed;inset:0;background:rgba(20,30,36,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
+  .overlay.on{display:flex}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:560px;padding:26px 26px 22px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal h2{font-size:1.5rem;color:var(--navy);margin-bottom:4px}
+  .modal .sub{color:var(--muted);font-size:.95rem;margin-bottom:14px}
+  .close{position:absolute;top:12px;right:14px;background:none;border:0;font-size:1.6rem;line-height:1;cursor:pointer;color:var(--muted)}
+  .f{margin-bottom:12px}
+  .f label{display:block;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .f input,.f select,.f textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+  .f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--gold-soft);border-color:var(--gold)}
+  .f textarea{min-height:80px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:520px){.row2{grid-template-columns:1fr}}
+  .chk{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--muted)}
+  .chk input{width:auto;margin-top:3px}
+  .err{color:#a33;font-size:.9rem;margin:6px 0}
+  .hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
+  .merci{text-align:center;padding:10px 0}
+  .merci .ok-ico{width:56px;height:56px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-size:1.8rem;line-height:56px;margin:0 auto 12px}
+  .merci .steps{text-align:left;background:var(--paper);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:.95rem}
+  .merci .steps b{color:var(--navy)}
+  .modal .btn.wide{display:block;text-align:center;margin:8px 0}
+  .loading{color:var(--muted);font-size:.9rem;padding:30px 0;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="notice" id="notice" hidden></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <img src="logo paroisse.png" alt="Paroisse de Puteaux">
+    <div class="mid">
+      <div class="k">Paroisse de Puteaux · Secours Catholique</div>
+      <div class="n">Défi Entr'aide</div>
+    </div>
+    <img src="Logo-Secours-Catholique-Caritas-France.png" alt="Secours Catholique - Caritas France">
+  </div>
+</header>
+
+<nav class="main" aria-label="Navigation">
+  <div class="wrap" id="navlinks">
+    <a href="#defis">Les défis</a>
+    <a href="#participer">Participer</a>
+    <a href="#apropos">À propos</a>
+    <a href="#bilan">Bilan 2025-2026</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">7<sup>e</sup> édition · du 6 septembre à la mi-novembre 2026</div>
+    <h1>Défi Entr'aide</h1>
+    <div class="ed">2026-2027</div>
+    <p class="lead">Choisissez un défi concret et agissez, par un don ou par votre temps, auprès des familles et des personnes les plus fragiles de Puteaux. Chaque défi est suivi par une marraine ou un parrain qui vous accompagne jusqu'au bout.</p>
+    <div class="global" id="global">
+      <div class="lbl">Avancement de l'édition</div>
+      <div class="big"><span id="g-pct">…</span> <small>de l'objectif des défis financiers</small></div>
+      <div class="bar"><span id="g-bar"></span></div>
+      <div class="stats">
+        <div class="stat"><div class="v" id="s-defis">22</div><div class="t">défis proposés</div></div>
+        <div class="stat"><div class="v" id="s-done">…</div><div class="t">défis déjà pourvus</div></div>
+        <div class="stat"><div class="v" id="s-benev">…</div><div class="t">bénévoles engagés</div></div>
+      </div>
+      <div class="cta"><a class="btn" href="#defis">Je relève un défi</a> <button class="btn ghost" type="button" data-engage="LIBRE" style="margin-left:8px;border-color:#e8eef0;color:#fff">Donner sans choisir de défi</button></div>
+    </div>
+  </div>
+</section>
+
+<main id="defis" class="wrap">
+  <div class="loading" id="loading">Chargement des défis…</div>
+  <div id="sections"></div>
+</main>
+
+<section class="participer" id="participer">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">·</div><h2 class="sec-title">Comment participer</h2></div>
+    <p class="sec-intro">Trois chemins au choix. Dans tous les cas, la marraine ou le parrain du défi vous renseigne, vous accompagne et s'assure que votre engagement va bien jusqu'au bout.</p>
+    <div class="three">
+      <div class="box"><h3>1. En ligne</h3><p>Ouvrez un défi ci-dessus et cliquez « Je m'engage ». Vous recevez un email de confirmation avec le lien de paiement ; la marraine ou le parrain vous contacte.</p></div>
+      <div class="box"><h3>2. Par le bulletin</h3><p>Bulletin de la brochure à déposer au 33 rue Saulnier, 92800 Puteaux, ou dans les paniers de quête.</p></div>
+      <div class="box"><h3>3. Sans choisir de défi</h3><p>Vous préférez que nous affections votre don là où le besoin est le plus grand ? <button class="share" type="button" data-engage="LIBRE" style="font-size:.95rem;color:var(--gold)">Faire un don à attribution libre</button>. Il sera réparti entre les défis les moins financés, en concertation avec l'équipe d'accompagnement.</p></div>
+      <div class="box"><h3>4. Par un don direct</h3><p>Par carte bancaire sur <a href="https://www.helloasso.com/associations/la-source-92" target="_blank" rel="noopener">HelloAsso</a> en indiquant le numéro du défi, ou par chèque à l'ordre de La Source 92.</p></div>
+    </div>
+    <p style="margin-top:16px;font-size:.92rem;color:var(--muted)">Les fonds sont gérés par l'association La Source 92, au service des projets solidaires de la paroisse. Chaque somme est affectée au défi que vous choisissez ; un éventuel surplus est reporté sur un besoin similaire. Les dons ne donnent pas droit à un reçu fiscal.</p>
+  </div>
+</section>
+
+<section class="page wrap" id="apropos">
+  <h2>À propos du Défi Entr'aide</h2>
+  <p>Depuis six ans, la Paroisse et le Secours Catholique de Puteaux proposent, à chaque rentrée, une série de défis concrets au service des personnes les plus fragiles de notre ville, à relever par un don ou par un peu de temps. Chaque défi est suivi par une marraine ou un parrain qui connaît la famille ou l'activité concernée : il vous renseigne, vous accompagne et s'assure que votre engagement va bien jusqu'au bout. La 7<sup>e</sup> édition est lancée le 6 septembre 2026, lors de la messe de rentrée ; la collecte se poursuit jusqu'à la mi-novembre.</p>
+  <p>La 7<sup>e</sup> édition propose 22 défis, dont 14 appels aux dons et 8 engagements de temps. Les grands besoins continuent, de nouveaux défis concrets s'ajoutent, identifiés par les paroissiens, le Secours Catholique et deux associations qui participent cette année au défi.</p>
+  <h3>L'Entraide Scolaire Amicale</h3>
+  <p>Elle accompagne individuellement dans leur scolarité des jeunes du CP à la terminale que leurs parents ne peuvent ni aider ni faire aider.</p>
+  <h3>L'aSd Prévention</h3>
+  <p>Nouvelle venue cette année, l'aSd Prévention (Association du Site de la Défense) est implantée depuis 34 ans à La Défense et dans les communes de Puteaux, Courbevoie et Suresnes. Elle mène une mission de prévention spécialisée et de Point Accueil Écoute Jeunes auprès des 11-25 ans. Son action s'appuie sur une présence de proximité, le travail de rue et la création de liens de confiance, qui permettent aux équipes d'aller à la rencontre des jeunes, d'identifier leurs besoins et de construire avec eux des réponses et des projets adaptés. À Puteaux, en 2025, 84 jeunes ont bénéficié d'un accompagnement psychosocial et éducatif individualisé ; plusieurs centaines de jeunes ont également été rencontrés dans le cadre du travail de rue et des actions collectives menées notamment au sein des établissements scolaires.</p>
+  <h3>Les défis vivent au rythme des personnes accompagnées</h3>
+  <p>Quand un défi ne peut plus être réalisé (une famille est relogée loin de Puteaux, un accompagnement s'achève), les sommes restantes sont affectées à un besoin similaire. Chaque basculement ou arrêt est décidé en concertation avec l'équipe d'accompagnateurs et validé par Camille, responsable de l'accompagnement du Secours Catholique de Puteaux. Si le nouveau besoin s'éloigne trop du défi choisi, le ou les donateurs sont informés et leur accord demandé.</p>
+  <h3>La Source 92</h3>
+  <p>L'association La Source 92 a pour objet, dans le respect des principes de la pensée sociale de l'Église, de mettre en œuvre ou soutenir des projets de la paroisse catholique de Puteaux dans les domaines culturels, artistiques, éducatifs, sportifs, caritatifs, écologiques et économiques ; d'être au service de l'accueil fraternel, de l'écoute, du partage et de la convivialité avec toutes personnes sans distinction d'origine, de religion ou de nationalité, et particulièrement avec les personnes en situation de fragilité ; d'assurer des relations entre la paroisse et d'autres groupes ou associations sur la commune de Puteaux ou des communes limitrophes.</p>
+  <p class="signatures">Père Sébastien Poidatz, curé de Puteaux · Florian Bonnasse, responsable du Secours Catholique à Puteaux</p>
+</section>
+
+<section class="page wrap" id="bilan">
+  <h2>Bilan de l'édition 2025-2026</h2>
+  <p>L'édition 2025-2026 a permis de récolter 11 830 €, de recruter de nouveaux bénévoles et volontaires et de relever 16 défis, en totalité ou en partie. Le solde de l'édition finance les mêmes besoins jusqu'à fin octobre 2026.</p>
+  <div class="bilan">
+    <div class="c"><div class="v">11 830 €</div><div class="t">collectés</div></div>
+    <div class="c"><div class="v">16</div><div class="t">défis relevés</div></div>
+    <div class="c"><div class="v">11 030 €</div><div class="t">dépensés à fin août</div></div>
+  </div>
+  <p>Répartition des dépenses : 56 % pour l'alimentation (cartes alimentaires, cantine, bébés), 18 % pour les loisirs, 17 % pour les transports et 7 % pour les sorties et moments fraternels.</p>
+  <p>Grâce à vous, la fraternité se vit concrètement à Puteaux : des enfants de familles sans ressource déjeunent à la cantine, partent en centre de loisirs et découvrent une activité périscolaire, des familles hébergées en hôtel social se nourrissent un peu mieux, des bébés reçoivent leur lait chaque mois, des personnes isolées retrouvent des visages amis.</p>
+</section>
+
+<section class="page wrap" id="mentions">
+  <h2>Mentions légales et données personnelles</h2>
+  <p>Site édité par la Paroisse de Puteaux, 33 rue Saulnier, 92800 Puteaux, <a href="mailto:info@paroisseputeaux.com">info@paroisseputeaux.com</a>, en partenariat avec le Secours Catholique - Caritas France, délégation des Hauts-de-Seine. Les fonds sont gérés par l'association La Source 92.</p>
+  <p>Les informations personnelles collectées par le formulaire « Je m'engage » (nom, prénom, email, téléphone, engagement) ne sont utilisées que pour le suivi de votre engagement par la marraine ou le parrain du défi et par les responsables de l'opération. Elles ne sont pas conservées au-delà de l'édition et ne sont pas transmises à des tiers sans votre accord. Dans le cadre du Règlement Général sur la Protection des Données, vous bénéficiez d'un droit d'accès, de rectification et de suppression des informations qui vous concernent ; pour l'exercer, adressez-vous à la Paroisse de Puteaux, 33 rue Saulnier, 92800 Puteaux, ou à <a href="mailto:info@paroisseputeaux.com">info@paroisseputeaux.com</a>.</p>
+  <p>Ce site n'utilise pas de cookies de suivi. Les paiements par carte sont réalisés sur la plateforme HelloAsso, soumise à ses propres conditions.</p>
+</section>
+
+<footer>
+  <div class="wrap">
+    Paroisse de Puteaux <span class="sep">|</span> Secours Catholique - Caritas France <span class="sep">|</span> 33 rue Saulnier, 92800 Puteaux <span class="sep">|</span> <a href="#mentions">Mentions légales</a>
+  </div>
+</footer>
+
+<!-- Modale Je m'engage -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal">
+    <button class="close" id="m-close" aria-label="Fermer">×</button>
+    <div id="m-form">
+      <h2 id="m-title">Je m'engage</h2>
+      <div class="sub" id="m-sub"></div>
+      <form id="form" novalidate>
+        <div class="f"><label for="f-defi">Défi</label>
+          <select id="f-defi" required></select></div>
+        <div class="row2">
+          <div class="f"><label for="f-prenom">Prénom</label><input id="f-prenom" required autocomplete="given-name"></div>
+          <div class="f"><label for="f-nom">Nom</label><input id="f-nom" required autocomplete="family-name"></div>
+        </div>
+        <div class="row2">
+          <div class="f"><label for="f-email">Email</label><input id="f-email" type="email" required autocomplete="email"></div>
+          <div class="f"><label for="f-tel">Téléphone (facultatif)</label><input id="f-tel" type="tel" autocomplete="tel"></div>
+        </div>
+        <div class="f"><label for="f-type">Type d'engagement</label>
+          <select id="f-type">
+            <option value="don">Don ponctuel</option>
+            <option value="don_mensuel">Don mensuel pendant l'édition</option>
+            <option value="temps">Engagement de temps</option>
+          </select></div>
+        <div class="f"><label for="f-montant" id="l-montant">Montant envisagé</label><input id="f-montant" placeholder="ex. 25 €, 100 €…"></div>
+        <div class="f"><label for="f-msg">Message (facultatif)</label><textarea id="f-msg" placeholder="Une question, une précision, vos disponibilités…"></textarea></div>
+        <div class="hp" aria-hidden="true"><label>Site web<input id="f-hp" tabindex="-1" autocomplete="off"></label></div>
+        <div class="f chk"><input type="checkbox" id="f-consent" required><label for="f-consent" style="text-transform:none;letter-spacing:0;font-size:.9rem">J'accepte que ces informations soient utilisées pour le suivi de mon engagement par la marraine ou le parrain du défi. Elles ne sont pas conservées au-delà de l'édition.</label></div>
+        <div class="err" id="f-err" hidden></div>
+        <button class="btn wide" type="submit" id="f-send">Envoyer mon engagement</button>
+      </form>
+    </div>
+    <div id="m-merci" hidden>
+      <div class="merci">
+        <div class="ok-ico">✓</div>
+        <h2>Merci !</h2>
+        <p id="merci-txt"></p>
+        <div class="steps" id="merci-steps"></div>
+        <a class="btn wide" id="btn-pay" href="#" target="_blank" rel="noopener">Payer maintenant sur HelloAsso</a>
+        <button class="btn ghost wide" id="merci-close" type="button">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   DONNÉES EMBARQUÉES : copie de la Google Sheet au 3 septembre 2026.
+   Utilisées seulement si l'API ne répond pas (aucun compteur dans ce cas).
+   ========================================================================= */
+const CATEGORIES = [
+  { num:"I",   cle:"I ·",   court:"Temps", titre:"Donner de votre temps au service des plus fragiles",
+    intro:"De nombreuses possibilités s'offrent à vous pour soutenir nos frères et sœurs qui en ont besoin : selon votre temps disponible, ponctuellement ou régulièrement, choisissez la mission qui vous convient." },
+  { num:"II",  cle:"II ·",  court:"Alimentaire", titre:"Aide alimentaire",
+    intro:"Nous recevons chaque année une cinquantaine de personnes ou familles en très grande précarité. S'alimenter est souvent leur premier besoin, urgent. Nous les orientons vers les associations d'aide alimentaire (Restos du Cœur, Secours Populaire…) et leur donnons un coup de pouce pour améliorer leur quotidien immédiatement." },
+  { num:"III", cle:"III ·", court:"Enfants", titre:"Aide financière pour les enfants",
+    intro:"Une trentaine de familles sont suivies par l'équipe du Secours Catholique durant l'année. Permettre à leurs enfants d'apprendre, de grandir et de s'intégrer est un objectif majeur. Vos dons sont essentiels pour les aider concrètement, au-delà de l'accueil." },
+  { num:"IV",  cle:"IV ·",  court:"Fraternité", titre:"Aide financière pour vivre des moments de fraternité",
+    intro:"Vivre la fraternité concrètement est au cœur de notre action. Nous cherchons à organiser des temps forts pour resserrer nos liens, nous évader et partager des moments de joie." },
+  { num:"V",   cle:"V ·",   court:"Jeunes aSd", titre:"Avec l'aSd, accompagner les jeunes de 11 à 25 ans",
+    intro:"L'aSd Prévention investit l'espace public pour aller vers les jeunes de 11 à 25 ans à La Défense, Courbevoie, Puteaux et Suresnes ; en 2025-2026, elle a accompagné 84 jeunes de Puteaux." }
+];
+
+const DEFIS_EMBARQUES = [
+  {id:"D01",numero:1,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Animer un atelier au « 24, Café & Ateliers »",type:"temps",description:"Un talent, une compétence à partager ? Animez un atelier le mercredi ou samedi après-midi.",contribution:"Animer 1 ou plusieurs ateliers (formation, activité, spectacle, conférence…)",besoin:"",referent:"Florian",role:"Parrain",statut:"ouvert",progression:null,engages:null},
+  {id:"D02",numero:2,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Tenir une permanence d'accueil",type:"temps",description:"Pour améliorer notre accueil, nous renforçons les permanences du samedi après-midi au 24 rue Collin.",contribution:"Assurer une permanence par mois le samedi entre 14h et 17h",besoin:"",referent:"Camille",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D03",numero:3,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Accompagner des demandes de logement",type:"temps",description:"L'équipe DALO aide les familles à compléter leur dossier de demande de logement à loyer modéré. Une vingtaine de foyers nous contactent chaque année.",contribution:"Créer et suivre 5 à 6 dossiers par an : 1h de rencontre, 30 min de création du dossier",besoin:"",referent:"Florian",role:"Parrain",statut:"ouvert",progression:null,engages:null},
+  {id:"D04",numero:4,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Coordonner la Table Ouverte Paroissiale",type:"temps",description:"Le 1er vendredi du mois, la TOP réunit les Putéoliens autour d'un dîner fraternel. Nous renforçons l'équipe de coordination de ce pilier de la vie paroissiale.",contribution:"Coordonner la TOP 4 à 8 fois par an, de 19h à 22h30 le vendredi soir",besoin:"",referent:"Evrard",role:"Parrain",statut:"ouvert",progression:null,engages:null},
+  {id:"D05",numero:5,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Rejoindre l'équipe coup de main",type:"temps",description:"Une équipe rend de précieux services ponctuels au Secours Catholique et à la paroisse : transport de meuble, bricolage, véhicule…",contribution:"Être disponible et réactif de manière ponctuelle, selon les besoins (avec voiture !)",besoin:"",referent:"Bernard",role:"Parrain",statut:"ouvert",progression:null,engages:null},
+  {id:"D06",numero:6,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Tenir compagnie à un homme handicapé",type:"temps",description:"Rester avec un mari handicapé pour permettre à son épouse d'assister à la messe à NDPS et à la répétition de chorale. Pas de soin à donner.",contribution:"1h30 de présence le samedi à 18h15 ou le jeudi à 19h15 (haut de Puteaux)",besoin:"",referent:"Caroline",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D07",numero:7,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Distribution d'invendus",type:"temps",description:"Distribution d'invendus de boulangeries pour une vingtaine de familles, plus de 50 personnes, les lundi et jeudi soirs.",contribution:"Assurer 1 distribution par mois, en binôme",besoin:"",referent:"Camille",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D08",numero:8,categorie:"I · Donner de votre temps au service des plus fragiles",titre:"Aider aux devoirs",type:"temps",description:"L'association Entraide Scolaire Amicale et le Secours Catholique cherchent des volontaires pour accompagner des jeunes de niveaux divers, de la 5ème à la Terminale. Au domicile des parents ou dans un lieu public.",contribution:"1 heure de cours par semaine",besoin:"",referent:"Fabienne",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D09",numero:9,categorie:"II · Aide alimentaire",titre:"Cartes alimentaires d'urgence",type:"don",description:"Carte alimentaire prépayée (Intermarché) pour des familles en grande précarité.",contribution:"25 € pour une carte alimentaire",besoin:"Aider 3 foyers par mois",referent:"Karine",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D10",numero:10,categorie:"II · Aide alimentaire",titre:"Tickets de transport en commun",type:"don",description:"Tickets de transport pour se rendre dans les règles sur les lieux de retrait de l'aide alimentaire, 2 fois par semaine.",contribution:"24 € pour 1 mois et 18 tickets",besoin:"Aider 3 foyers par mois",referent:"Christel",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D11",numero:11,categorie:"II · Aide alimentaire",titre:"Nourriture pour bébés",type:"don",description:"Alimentation mensuelle pour les bébés de familles sans ressource ; carte alimentaire prépayée.",contribution:"30 € par carte alimentaire bébé",besoin:"Accompagner 3 bébés par mois pendant 1 an",referent:"Pauline",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D12",numero:12,categorie:"II · Aide alimentaire",titre:"Repas à la cantine de l'école",type:"don",description:"Frais de cantine pour 10 enfants de 5 à 14 ans. Un vrai repas par jour garanti.",contribution:"1,40 € par repas, 25 € par enfant pour 1 mois, 200 € par enfant pour 1 année scolaire",besoin:"Accompagner 10 enfants cette année",referent:"Mathilde",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D13",numero:13,categorie:"III · Aide financière pour les enfants",titre:"Pass Navigo Junior",type:"don",description:"Pass pour 7 enfants de 6 à 15 ans, scolarisés à Puteaux et habitant loin.",contribution:"25 € le pass mensuel, 300 € / an",besoin:"Aider 7 enfants",referent:"Mathilde",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D14",numero:14,categorie:"III · Aide financière pour les enfants",titre:"Centre de loisirs pendant les vacances",type:"don",description:"Centre de loisirs municipal pour 6 enfants, sur la moitié des vacances scolaires.",contribution:"100 € pour 4 semaines",besoin:"Accompagner 6 enfants",referent:"Danièle",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D15",numero:15,categorie:"III · Aide financière pour les enfants",titre:"Inscription à l'étude après l'école",type:"don",description:"Frais d'étude après l'école pour 2 enfants, en soutien à leur progression scolaire.",contribution:"12 € par mois et 96 € par an",besoin:"Aider 2 enfants",referent:"Christel",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D16",numero:16,categorie:"IV · Aide financière pour vivre des moments de fraternité",titre:"Grande sortie du Secours Catholique",type:"don",description:"Un grand moment réunissant bénévoles et bénéficiaires.",contribution:"20 € pour une activité et le goûter d'une personne",besoin:"20 personnes à emmener",referent:"Florian",role:"Parrain",statut:"ouvert",progression:null,engages:null},
+  {id:"D17",numero:17,categorie:"IV · Aide financière pour vivre des moments de fraternité",titre:"Sorties du groupe de partage de la Parole",type:"don",description:"Sorties culturelles pour ces personnes de différentes religions réunies chaque mois autour de la Bible.",contribution:"100 € pour 1 sortie",besoin:"2 sorties (Louvre, Sainte Chapelle)",referent:"Fabienne",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D18",numero:18,categorie:"V · Avec l'aSd, accompagner les jeunes de 11 à 25 ans",titre:"Déjeuners à 1 € à la Salle à Manger",type:"don",description:"Cartes mensuelles permettant à un jeune de déjeuner pour 1 € du lundi au vendredi au restaurant solidaire La Salle à Manger.",contribution:"22 € = 1 mois pour 1 jeune",besoin:"Aider 1 jeune chaque mois",referent:"Emilie",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D19",numero:19,categorie:"V · Avec l'aSd, accompagner les jeunes de 11 à 25 ans",titre:"Aide au transport pour sortir de l'errance",type:"don",description:"Carte Solidarité Transport pour des jeunes sans papiers détenteurs de l'AME, exclus des autres dispositifs d'aide, pour leurs démarches d'insertion.",contribution:"45,40 € = 1 mois de transport",besoin:"Aider 1 jeune chaque mois",referent:"Emilie",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D20",numero:20,categorie:"V · Avec l'aSd, accompagner les jeunes de 11 à 25 ans",titre:"Accès à la laverie",type:"don",description:"Préserver sa dignité en lavant ses vêtements : financer une laverie mensuelle pour des jeunes accompagnés.",contribution:"10 € = 1 mois",besoin:"Aider 1 jeune chaque mois",referent:"Emilie",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D21",numero:21,categorie:"V · Avec l'aSd, accompagner les jeunes de 11 à 25 ans",titre:"Bagagerie pour mettre ses affaires à l'abri",type:"don",description:"Un lieu de stockage sécurisé à l'année (l'équivalent d'une valise), pour ne plus porter toutes ses affaires sur soi.",contribution:"410 € par an pour disposer d'un lieu de stockage",besoin:"",referent:"Emilie",role:"Marraine",statut:"ouvert",progression:null,engages:null},
+  {id:"D22",numero:22,categorie:"V · Avec l'aSd, accompagner les jeunes de 11 à 25 ans",titre:"Nuits d'hôtel d'urgence",type:"don",description:"Mettre à l'abri en urgence des jeunes à risque (jeunes femmes isolées notamment), le temps de trouver un hébergement stable.",contribution:"3 nuits d'hôtel pour 1 jeune = 350 €",besoin:"10 jeunes hébergés en urgence par an",referent:"Emilie",role:"Marraine",statut:"ouvert",progression:null,engages:null}
+];
+
+/* ========================================================================= APPLICATION */
+let DEFIS = [];
+const DEFI_LIBRE = { id:"LIBRE", numero:"", titre:"Don libre, sans défi particulier", type:"don", referent:"", role:"", statut:"ouvert" };
+let RESUME = null;
+let AVEC_API = false;
+const collecteTerminee = new Date() > new Date(CONFIG.DATE_FIN_COLLECTE + "T23:59:59");
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function categorieDe(d){
+  const c = (d.categorie || "").trim();
+  return CATEGORIES.find(k => c.toUpperCase().startsWith(k.cle.toUpperCase())) || CATEGORIES.find(k => c.toUpperCase().includes(k.titre.toUpperCase().slice(0,12))) || CATEGORIES[0];
+}
+
+function progHtml(d, mini){
+  const fin = d.statut === "finance";
+  if (d.type === "don"){
+    if (d.progression == null) return "";
+    const p = Math.max(0, Math.min(100, d.progression));
+    if (mini) return `<div class="mini"><div class="p">${p} %</div><div class="b${fin||p>=100?' done':''}"><span data-w="${p}"></span></div><div class="t">${fin||p>=100?'défi financé':'de l\'objectif'}</div></div>`;
+    return `<div class="prog${fin||p>=100?' done':''}"><div class="p">${p} %</div><div class="b"><span data-w="${p}"></span></div><div class="t">${fin||p>=100?'Objectif atteint, merci !':'de l\'objectif de ce défi déjà collecté'}</div></div>`;
+  }
+  // temps
+  const n = d.engages || 0;
+  if (!AVEC_API) return "";
+  const txt = n === 0 ? "aucun bénévole pour l'instant" : n + (n > 1 ? " bénévoles engagés" : " bénévole engagé");
+  if (mini) return `<div class="mini"><div class="p">${fin ? 'Pourvu' : n}</div><div class="t">${fin ? 'équipe au complet' : (n>1?'bénévoles engagés':'bénévole engagé')}</div></div>`;
+  if (d.progression != null){
+    const p = Math.max(0, Math.min(100, d.progression));
+    return `<div class="prog${fin||p>=100?' done':''}"><div class="p">${p} %</div><div class="b"><span data-w="${p}"></span></div><div class="t">${fin||p>=100?'Équipe au complet, merci !':txt}</div></div>`;
+  }
+  return `<div class="prog${fin?' done':''}"><div class="p">${fin ? 'Équipe au complet' : n}</div><div class="t">${fin ? 'merci !' : txt}</div></div>`;
+}
+
+function defiHtml(d){
+  const fin = d.statut === "finance", clos = d.statut === "cloture";
+  const badge = fin ? `<span class="badge ok">${d.type==='don'?'Défi financé':'Équipe au complet'}</span>` :
+                clos ? `<span class="badge">Clôturé</span>` :
+                `<span class="badge ${d.type}">${d.type==='don'?'Don':'Temps'}</span>`;
+  let bouton = "";
+  if (!collecteTerminee && !clos){
+    bouton = fin
+      ? `<button class="btn sm ghost" data-engage="${esc(d.id)}" data-similaire="1">Soutenir un besoin similaire</button>`
+      : `<button class="btn sm" data-engage="${esc(d.id)}">Je m'engage</button>`;
+  }
+  return `<article class="defi${fin?' fin':''}" id="defi-${d.numero}" data-id="${esc(d.id)}">
+    <button class="defi-head" aria-expanded="false" aria-controls="body-${d.numero}">
+      <div class="num">${d.numero}</div>
+      <div><h3>${esc(d.titre)}</h3>
+        <div class="meta">${badge}<span>${esc(d.role)} : <b>${esc(d.referent)}</b></span></div></div>
+      ${progHtml(d, true) || '<div class="mini"></div>'}
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    <div class="defi-body" id="body-${d.numero}">
+      <p>${esc(d.description)}</p>
+      <dl class="kv">
+        <dt>Votre contribution</dt><dd>${esc(d.contribution)}</dd>
+        ${d.besoin ? `<dt>Notre besoin</dt><dd>${esc(d.besoin)}</dd>` : ''}
+        <dt>${esc(d.role)}</dt><dd>${esc(d.referent)}, vous contacte après votre engagement</dd>
+      </dl>
+      ${progHtml(d, false)}
+      <div class="actions">${bouton}<button class="share" data-share="${d.numero}">Partager ce défi</button></div>
+    </div>
+  </article>`;
+}
+
+document.querySelectorAll("body > :not(main) [data-engage]").forEach(b => b.addEventListener("click", () => ouvrirFormulaire(b.dataset.engage, false)));
+function rendre(){
+  const cont = document.getElementById("sections");
+  const parCat = new Map();
+  DEFIS.forEach(d => { const c = categorieDe(d); if(!parCat.has(c)) parCat.set(c, []); parCat.get(c).push(d); });
+  const nav = document.getElementById("navlinks");
+  nav.querySelectorAll("[data-cat]").forEach(a => a.remove());
+  let html = "";
+  CATEGORIES.forEach(c => {
+    const liste = parCat.get(c); if(!liste) return;
+    liste.sort((a,b) => a.numero - b.numero);
+    html += `<section class="cat" id="cat-${c.num}">
+      <div class="sec-head"><div class="sec-num">${c.num}</div><h2 class="sec-title">${esc(c.titre)}</h2></div>
+      <p class="sec-intro">${esc(c.intro)}</p>
+      ${liste.map(defiHtml).join("")}
+    </section>`;
+    const a = document.createElement("a"); a.href = "#cat-" + c.num; a.dataset.cat = c.num; a.textContent = c.num + " · " + c.court;
+    nav.insertBefore(a, nav.querySelector('a[href="#participer"]'));
+  });
+  cont.innerHTML = html;
+  document.getElementById("loading").hidden = true;
+
+  // Compteur global
+  const nbFin = DEFIS.filter(d => d.statut === "finance").length;
+  document.getElementById("s-defis").textContent = DEFIS.length;
+  document.getElementById("s-done").textContent = AVEC_API ? nbFin : "–";
+  document.getElementById("s-benev").textContent = AVEC_API && RESUME ? (RESUME.benevolesEngages || 0) : "–";
+  const gp = AVEC_API && RESUME ? (RESUME.progressionGlobale || 0) : null;
+  document.getElementById("g-pct").textContent = gp == null ? "–" : gp + " %";
+  document.getElementById("g-bar").dataset.w = gp || 0;
+
+  // Barres animées
+  const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.style.width = (e.target.dataset.w||0) + "%"; io.unobserve(e.target);} }));
+  document.querySelectorAll("span[data-w]").forEach(b => io.observe(b));
+
+  // Accordéons
+  cont.querySelectorAll(".defi-head").forEach(h => h.addEventListener("click", () => {
+    const art = h.closest(".defi"); const open = art.classList.toggle("open");
+    h.setAttribute("aria-expanded", open);
+    if (open) art.querySelectorAll(".defi-body span[data-w]").forEach(b => b.style.width = (b.dataset.w||0) + "%");
+  }));
+  cont.querySelectorAll("[data-engage]").forEach(b => b.addEventListener("click", () => ouvrirFormulaire(b.dataset.engage, !!b.dataset.similaire)));
+  cont.querySelectorAll("[data-share]").forEach(b => b.addEventListener("click", () => partager(b.dataset.share)));
+
+  // Lien direct #defi-12
+  ouvrirDepuisHash();
+}
+
+function ouvrirDepuisHash(){
+  const m = location.hash.match(/^#defi-(\d+)$/); if(!m) return;
+  const art = document.getElementById("defi-" + m[1]); if(!art) return;
+  art.classList.add("open"); art.querySelector(".defi-head").setAttribute("aria-expanded","true");
+  art.querySelectorAll("span[data-w]").forEach(b => b.style.width = (b.dataset.w||0) + "%");
+  setTimeout(() => art.scrollIntoView({behavior:"smooth", block:"center"}), 100);
+}
+window.addEventListener("hashchange", ouvrirDepuisHash);
+
+function partager(num){
+  const d = DEFIS.find(x => String(x.numero) === String(num)); if(!d) return;
+  const url = location.origin + location.pathname + "#defi-" + num;
+  const texte = "Défi Entr'aide 2026-2027 · Défi " + num + " : " + d.titre;
+  if (navigator.share) { navigator.share({title: texte, text: texte, url}).catch(()=>{}); return; }
+  navigator.clipboard.writeText(url).then(() => alertBref("Lien copié : " + url)).catch(() => prompt("Copiez ce lien :", url));
+}
+function alertBref(msg){
+  const n = document.getElementById("notice"); n.textContent = msg; n.hidden = false;
+  clearTimeout(alertBref.t); alertBref.t = setTimeout(() => { n.hidden = collecteTerminee ? false : true; if(collecteTerminee) bandeauFin(); }, 3500);
+}
+function bandeauFin(){
+  const n = document.getElementById("notice");
+  n.textContent = "La collecte de l'édition 2026-2027 est terminée. Merci à toutes et à tous ! Les défis restent consultables ; pour nous rejoindre, écrivez à " + CONFIG.EMAIL_CONTACT + ".";
+  n.hidden = false;
+}
+
+/* ---------------- Formulaire ---------------- */
+const overlay = document.getElementById("overlay");
+const selDefi = document.getElementById("f-defi");
+const selType = document.getElementById("f-type");
+
+function ouvrirFormulaire(id, similaire){
+  const d = id === "LIBRE" ? DEFI_LIBRE : DEFIS.find(x => x.id === id);
+  selDefi.innerHTML = `<option value="LIBRE" data-type="don">Don libre, sans défi particulier (attribution par l'équipe)</option>` + DEFIS.filter(x => x.statut !== "cloture").map(x => `<option value="${esc(x.id)}" data-type="${x.type}">${x.numero} · ${esc(x.titre)}${x.statut==='finance'?' (financé)':''}</option>`).join("");
+  if (d) selDefi.value = d.id;
+  document.getElementById("m-sub").textContent = id === "LIBRE"
+    ? "Votre don sera affecté aux défis les moins financés, en concertation avec l'équipe d'accompagnement. Vous recevez un email de confirmation avec le lien de paiement."
+    : similaire
+    ? "Ce défi est déjà financé : votre don sera affecté à un besoin similaire, en concertation avec l'équipe d'accompagnement. Vous pouvez aussi choisir un autre défi ci-dessous."
+    : "Après envoi, vous recevez un email de confirmation et la marraine ou le parrain du défi vous contacte.";
+  ajusterType();
+  document.getElementById("m-form").hidden = false;
+  document.getElementById("m-merci").hidden = true;
+  document.getElementById("f-err").hidden = true;
+  overlay.classList.add("on"); document.body.style.overflow = "hidden";
+  setTimeout(() => document.getElementById("f-prenom").focus(), 50);
+}
+function fermer(){ overlay.classList.remove("on"); document.body.style.overflow = ""; }
+document.getElementById("m-close").onclick = fermer;
+document.getElementById("merci-close").onclick = fermer;
+overlay.addEventListener("click", e => { if (e.target === overlay) fermer(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay.classList.contains("on")) fermer(); });
+
+function ajusterType(){
+  const opt = selDefi.selectedOptions[0]; const t = opt ? opt.dataset.type : "don";
+  if (t === "temps") { selType.value = "temps"; }
+  else if (selType.value === "temps") { selType.value = "don"; }
+  const l = document.getElementById("l-montant"), i = document.getElementById("f-montant");
+  if (selType.value === "temps") { l.textContent = "Vos disponibilités"; i.placeholder = "ex. un samedi par mois, le jeudi soir…"; }
+  else { l.textContent = selType.value === "don_mensuel" ? "Montant mensuel envisagé" : "Montant envisagé"; i.placeholder = "ex. 25 €, 100 €…"; }
+}
+selDefi.addEventListener("change", ajusterType);
+selType.addEventListener("change", ajusterType);
+
+document.getElementById("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = document.getElementById("f-err"); err.hidden = true;
+  const v = id => document.getElementById(id).value.trim();
+  const opt = selDefi.selectedOptions[0];
+  const d = selDefi.value === "LIBRE" ? DEFI_LIBRE : (DEFIS.find(x => x.id === selDefi.value) || {});
+  const data = {
+    defiId: selDefi.value, defiNumero: d.numero || "", defiTitre: d.titre || (opt ? opt.textContent : ""),
+    prenom: v("f-prenom"), nom: v("f-nom"), email: v("f-email"), telephone: v("f-tel"),
+    typeEngagement: selType.value, montantOuDispo: v("f-montant"), message: v("f-msg"),
+    consentement: document.getElementById("f-consent").checked, site_web: v("f-hp")
+  };
+  if (!data.prenom || !data.nom || !data.email) { err.textContent = "Merci d'indiquer votre prénom, votre nom et votre email."; err.hidden = false; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { err.textContent = "L'adresse email semble incorrecte."; err.hidden = false; return; }
+  if (!data.consentement) { err.textContent = "Merci de cocher la case de consentement."; err.hidden = false; return; }
+
+  const btn = document.getElementById("f-send"); btn.disabled = true; btn.textContent = "Envoi en cours…";
+  try {
+    if (!CONFIG.URL_API) throw new Error("Le formulaire n'est pas encore relié (URL_API vide).");
+    const r = await fetch(CONFIG.URL_API, { method:"POST", body: JSON.stringify(data), headers: {"Content-Type":"text/plain;charset=utf-8"} });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erreur || "Erreur inconnue");
+    afficherMerci(data, d);
+  } catch (ex) {
+    err.textContent = "L'envoi n'a pas abouti (" + ex.message + "). Vous pouvez réessayer, ou écrire à " + CONFIG.EMAIL_CONTACT + ".";
+    err.hidden = false;
+  } finally { btn.disabled = false; btn.textContent = "Envoyer mon engagement"; }
+});
+
+function afficherMerci(data, d){
+  const estDon = data.typeEngagement !== "temps";
+  const libre = d.id === "LIBRE";
+  const libDefi = libre ? "Don libre" : "Défi " + (d.numero || "") + " · " + (d.titre || "");
+  document.getElementById("merci-txt").textContent = libre
+    ? data.prenom + ", votre don à attribution libre est bien enregistré. Un email de confirmation vous a été envoyé ; l'équipe l'affectera aux défis qui en ont le plus besoin."
+    : data.prenom + ", votre engagement sur « " + libDefi + " » est bien enregistré. Un email de confirmation vous a été envoyé" + (d.referent ? " ; " + d.referent + ", " + (d.role||"").toLowerCase() + " de ce défi, vous contactera." : ".");
+  const steps = document.getElementById("merci-steps");
+  const pay = document.getElementById("btn-pay");
+  if (estDon){
+    steps.innerHTML = `<b>Pour concrétiser votre don :</b><br>
+      · par carte bancaire sur HelloAsso, en indiquant « ${esc(libDefi)} » dans le champ prévu lors du paiement ;<br>
+      · ou par chèque à l'ordre de <b>La Source 92</b>, à déposer au 33 rue Saulnier, 92800 Puteaux, ou dans les paniers de quête.<br>
+      <span style="color:var(--muted)">Les dons ne donnent pas droit à un reçu fiscal.</span>`;
+    pay.href = CONFIG.URL_HELLOASSO; pay.hidden = false;
+  } else {
+    steps.innerHTML = `<b>Et maintenant ?</b><br>${esc(d.referent || "La marraine ou le parrain")} prend contact avec vous dans les prochains jours pour organiser votre engagement. Merci pour votre temps !`;
+    pay.hidden = true;
+  }
+  document.getElementById("m-form").hidden = true;
+  document.getElementById("m-merci").hidden = false;
+  document.getElementById("form").reset();
+}
+
+/* ---------------- Chargement ---------------- */
+async function charger(){
+  if (collecteTerminee) bandeauFin();
+  if (CONFIG.URL_API){
+    try {
+      const r = await fetch(CONFIG.URL_API + (CONFIG.URL_API.includes("?") ? "&" : "?") + "action=defis", { cache: "no-store" });
+      const j = await r.json();
+      if (j && j.ok && Array.isArray(j.defis) && j.defis.length) { DEFIS = j.defis; RESUME = j.resume; AVEC_API = true; }
+    } catch (e) { console.warn("API indisponible, données embarquées utilisées", e); }
+  }
+  if (!DEFIS.length) DEFIS = DEFIS_EMBARQUES;
+  rendre();
+}
+charger();
+</script>
+</body>
+</html>
