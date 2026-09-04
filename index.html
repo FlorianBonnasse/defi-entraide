@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>Défi Entr'aide 2026-2027 | Paroisse et Secours Catholique de Puteaux</title>
 <meta name="description" content="7e édition du Défi Entr'aide : 22 défis concrets au service des personnes les plus fragiles de Puteaux, à relever par un don ou par un peu de temps.">
 <meta property="og:title" content="Défi Entr'aide 2026-2027">
@@ -26,9 +27,12 @@ const CONFIG = {
 <style>
   :root{
     --ink:#23303a; --navy:#1d4453; --navy2:#2c5868;
-    --gold:#b07a3f; --gold-soft:#c79a5e; --pill:#f3ece0;
+    /* Vert et rose repris du logo (#53b57d et #f097a7), assombris lorsqu ils
+       portent du texte, pour rester lisibles (contraste AA). */
+    --vert:#35734a; --vert-clair:#53b57d; --rose:#f097a7; --rose-fonce:#bf4a63;
+    --pill:#f3ece0;
     --paper:#faf7f1; --card:#ffffff; --line:#e4ddd0; --muted:#6d6256;
-    --ok:#3f7d54; --ok-soft:#e5f0e8; --bar-bg:#eae3d5;
+    --ok:#2a6440; --ok-soft:#e5f0e8; --bar-bg:#eae3d5;
     --serif:Georgia,"Times New Roman",serif;
     --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
   }
@@ -36,14 +40,14 @@ const CONFIG = {
   html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
-  a{color:var(--gold)}
+  a{color:var(--vert)}
   h1,h2,h3{font-family:var(--serif);font-weight:normal;margin:0}
   p{margin:0 0 .8em}
   .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
   .sr{position:absolute;left:-9999px}
 
   /* Bandeau d'état */
-  .notice{background:var(--gold);color:#fff;text-align:center;padding:8px 14px;font-size:.92rem}
+  .notice{background:var(--vert);color:#fff;text-align:center;padding:8px 14px;font-size:.92rem}
   .notice[hidden]{display:none}
 
   /* Barre supérieure */
@@ -59,34 +63,34 @@ const CONFIG = {
   nav.main .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:0;padding-bottom:0;scrollbar-width:none}
   nav.main .wrap::-webkit-scrollbar{display:none}
   nav.main a{color:#e8eef0;text-decoration:none;padding:12px 14px;white-space:nowrap;font-size:.9rem;border-bottom:3px solid transparent}
-  nav.main a:hover,nav.main a.on{border-bottom-color:var(--gold-soft);color:#fff}
+  nav.main a:hover,nav.main a.on{border-bottom-color:var(--rose);color:#fff}
 
   /* Hero */
   .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:48px 0 40px}
-  .hero .eyebrow{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft)}
+  .hero .eyebrow{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--rose)}
   .hero h1{font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.05;margin:8px 0 4px}
-  .hero .ed{font-family:var(--serif);font-size:1.4rem;color:var(--gold-soft)}
+  .hero .ed{font-family:var(--serif);font-size:1.4rem;color:var(--rose)}
   .hero .lead{max-width:640px;font-size:1.08rem;margin:18px 0 26px;color:#e8eef0}
   .global{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:22px 24px;max-width:640px}
-  .global .lbl{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft)}
+  .global .lbl{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--rose)}
   .global .big{font-family:var(--serif);font-size:2.4rem;line-height:1.1;margin:6px 0 4px}
   .global .big small{font-size:1rem;font-family:var(--sans);color:#d7e0e3}
   .bar{height:10px;background:rgba(255,255,255,.18);border-radius:999px;overflow:hidden;margin:10px 0 14px}
-  .bar>span{display:block;height:100%;width:0;background:var(--gold-soft);border-radius:999px;transition:width 1.2s ease}
+  .bar>span{display:block;height:100%;width:0;background:var(--vert-clair);border-radius:999px;transition:width 1.2s ease}
   .stats{display:flex;gap:26px;flex-wrap:wrap}
   .stat .v{font-family:var(--serif);font-size:1.5rem}
   .stat .t{font-size:.82rem;color:#d7e0e3}
-  .btn{display:inline-block;background:var(--gold);color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;border:0;cursor:pointer;font-size:1rem;font-family:var(--sans)}
+  .btn{display:inline-block;background:var(--vert);color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;border:0;cursor:pointer;font-size:1rem;font-family:var(--sans)}
   .btn:hover{background:#9a6a35}
-  .btn.ghost{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
+  .btn.ghost{background:transparent;border:1.5px solid var(--vert);color:var(--vert)}
   .btn.ghost:hover{background:var(--pill)}
   .btn.sm{padding:9px 16px;font-size:.92rem}
   .hero .cta{margin-top:16px}
 
   /* Sections */
   section.cat{padding:44px 0 8px}
-  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--gold-soft);padding-bottom:8px;margin-bottom:10px}
-  .sec-num{font-family:var(--serif);color:var(--gold);font-size:1.4rem}
+  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--rose);padding-bottom:8px;margin-bottom:10px}
+  .sec-num{font-family:var(--serif);color:var(--rose-fonce);font-size:1.4rem}
   .sec-title{font-size:1.65rem;color:var(--navy)}
   .sec-intro{color:var(--muted);max-width:760px;margin-bottom:18px}
 
@@ -95,19 +99,19 @@ const CONFIG = {
   .defi.fin{border-color:#c9dccd}
   .defi-head{display:grid;grid-template-columns:44px 1fr auto 20px;gap:12px;align-items:center;padding:14px 16px;cursor:pointer;background:none;border:0;width:100%;text-align:left;font:inherit;color:inherit}
   .defi-head:hover{background:#fcfaf6}
-  .num{font-family:var(--serif);font-size:1.3rem;color:var(--gold);text-align:center}
+  .num{font-family:var(--serif);font-size:1.3rem;color:var(--rose-fonce);text-align:center}
   .defi-head h3{font-size:1.08rem;color:var(--navy)}
   .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px;font-size:.82rem;color:var(--muted)}
-  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:var(--pill);color:var(--gold)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:var(--pill);color:var(--vert)}
   .badge.temps{background:#e6eef1;color:var(--navy)}
   .badge.ok{background:var(--ok-soft);color:var(--ok)}
   .mini{min-width:110px;text-align:right}
   .mini .p{font-family:var(--serif);font-size:1.15rem;color:var(--navy)}
   .mini .b{height:6px;background:var(--bar-bg);border-radius:999px;overflow:hidden;margin-top:4px}
-  .mini .b>span{display:block;height:100%;width:0;background:var(--gold);transition:width .9s ease}
+  .mini .b>span{display:block;height:100%;width:0;background:var(--vert-clair);transition:width .9s ease}
   .mini .b.done>span{background:var(--ok)}
   .mini .t{font-size:.72rem;color:var(--muted)}
-  .chev{width:12px;height:12px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(45deg);transition:transform .25s;justify-self:end;margin-right:4px}
+  .chev{width:12px;height:12px;border-right:2px solid var(--vert);border-bottom:2px solid var(--vert);transform:rotate(45deg);transition:transform .25s;justify-self:end;margin-right:4px}
   .defi.open .chev{transform:rotate(-135deg)}
   .defi-body{display:none;padding:4px 16px 18px 72px;border-top:1px dashed var(--line)}
   .defi.open .defi-body{display:block}
@@ -118,7 +122,7 @@ const CONFIG = {
   .prog{background:var(--pill);border-radius:10px;padding:12px 14px;margin:12px 0;max-width:420px}
   .prog .p{font-family:var(--serif);font-size:1.4rem;color:var(--navy)}
   .prog .b{height:8px;background:#fff;border-radius:999px;overflow:hidden;margin:6px 0 4px}
-  .prog .b>span{display:block;height:100%;width:0;background:var(--gold);transition:width .9s ease}
+  .prog .b>span{display:block;height:100%;width:0;background:var(--vert-clair);transition:width .9s ease}
   .prog .t{font-size:.82rem;color:var(--muted)}
   .prog.done{background:var(--ok-soft)}
   .prog.done .b>span{background:var(--ok)}
@@ -142,7 +146,7 @@ const CONFIG = {
 
   /* Pages secondaires */
   section.page{padding:44px 0 10px;max-width:760px}
-  section.page h2{font-size:1.65rem;color:var(--navy);border-bottom:2px solid var(--gold-soft);padding-bottom:8px;margin-bottom:14px}
+  section.page h2{font-size:1.65rem;color:var(--navy);border-bottom:2px solid var(--rose);padding-bottom:8px;margin-bottom:14px}
   section.page h3{font-size:1.15rem;color:var(--navy);margin:18px 0 6px}
   .bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
   .bilan .c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
@@ -152,7 +156,7 @@ const CONFIG = {
 
   footer{background:var(--navy);color:#d7e0e3;margin-top:40px;padding:26px 0;font-size:.9rem}
   footer a{color:#fff}
-  footer .sep{margin:0 8px;color:var(--gold-soft)}
+  footer .sep{margin:0 8px;color:var(--rose)}
 
   /* Modale */
   .overlay{position:fixed;inset:0;background:rgba(20,30,36,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:24px 12px;overflow-y:auto}
@@ -164,14 +168,14 @@ const CONFIG = {
   .f{margin-bottom:12px}
   .f label{display:block;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .f input,.f select,.f textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
-  .f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--gold-soft);border-color:var(--gold)}
+  .f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--vert-clair);border-color:var(--vert)}
   .f textarea{min-height:80px;resize:vertical}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media (max-width:520px){.row2{grid-template-columns:1fr}}
   .chk{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--muted)}
   .chk input{width:auto;margin-top:3px}
   .err{color:#a33;font-size:.9rem;margin:6px 0}
-  .err.attente{color:var(--ink);background:var(--pill);border-left:3px solid var(--gold);padding:10px 12px;border-radius:6px;line-height:1.45}
+  .err.attente{color:var(--ink);background:var(--pill);border-left:3px solid var(--rose);padding:10px 12px;border-radius:6px;line-height:1.45}
   .hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
   .merci{text-align:center;padding:10px 0}
   .merci .ok-ico{width:56px;height:56px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-size:1.8rem;line-height:56px;margin:0 auto 12px}
@@ -237,7 +241,7 @@ const CONFIG = {
     <div class="three">
       <div class="box"><h3>1. En ligne</h3><p>Ouvrez un défi ci-dessus et cliquez « Je m'engage ». Vous recevez un email de confirmation avec le lien de paiement ; la marraine ou le parrain vous contacte.</p></div>
       <div class="box"><h3>2. Par le bulletin</h3><p>Bulletin de la brochure à déposer au 33 rue Saulnier, 92800 Puteaux, ou dans les paniers de quête.</p></div>
-      <div class="box"><h3>3. Sans choisir de défi</h3><p>Vous préférez que nous affections votre don là où le besoin est le plus grand ? <button class="share" type="button" data-engage="LIBRE" style="font-size:.95rem;color:var(--gold)">Faire un don à attribution libre</button>. Il sera réparti entre les défis les moins financés, en concertation avec l'équipe d'accompagnement.</p></div>
+      <div class="box"><h3>3. Sans choisir de défi</h3><p>Vous préférez que nous affections votre don là où le besoin est le plus grand ? <button class="share" type="button" data-engage="LIBRE" style="font-size:.95rem;color:var(--vert)">Faire un don à attribution libre</button>. Il sera réparti entre les défis les moins financés, en concertation avec l'équipe d'accompagnement.</p></div>
       <div class="box"><h3>4. Par un don direct</h3><p>Par carte bancaire sur <a href="https://www.helloasso.com/associations/la-source-92" target="_blank" rel="noopener">HelloAsso</a> en indiquant le numéro du défi, ou par chèque à l'ordre de La Source 92.</p></div>
     </div>
     <p style="margin-top:16px;font-size:.92rem;color:var(--muted)">Les fonds sont gérés par l'association La Source 92, au service des projets solidaires de la paroisse. Chaque somme est affectée au défi que vous choisissez ; un éventuel surplus est reporté sur un besoin similaire. Les dons ne donnent pas droit à un reçu fiscal.</p>
