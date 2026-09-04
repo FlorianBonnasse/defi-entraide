@@ -171,6 +171,7 @@ const CONFIG = {
   .chk{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--muted)}
   .chk input{width:auto;margin-top:3px}
   .err{color:#a33;font-size:.9rem;margin:6px 0}
+  .err.attente{color:var(--ink);background:var(--pill);border-left:3px solid var(--gold);padding:10px 12px;border-radius:6px;line-height:1.45}
   .hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
   .merci{text-align:center;padding:10px 0}
   .merci .ok-ico{width:56px;height:56px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-size:1.8rem;line-height:56px;margin:0 auto 12px}
@@ -528,7 +529,8 @@ function ouvrirFormulaire(id, similaire){
   ajusterType();
   document.getElementById("m-form").hidden = false;
   document.getElementById("m-merci").hidden = true;
-  document.getElementById("f-err").hidden = true;
+  const eBox = document.getElementById("f-err"); eBox.hidden = true; eBox.className = "err";
+  const eBtn = document.getElementById("f-send"); eBtn.disabled = false; eBtn.textContent = "Envoyer mon engagement";
   overlay.classList.add("on"); document.body.style.overflow = "hidden";
   setTimeout(() => document.getElementById("f-prenom").focus(), 50);
 }
@@ -551,7 +553,7 @@ selType.addEventListener("change", ajusterType);
 
 document.getElementById("form").addEventListener("submit", async e => {
   e.preventDefault();
-  const err = document.getElementById("f-err"); err.hidden = true;
+  const err = document.getElementById("f-err"); err.hidden = true; err.className = "err";
   const v = id => document.getElementById(id).value.trim();
   const opt = selDefi.selectedOptions[0];
   const d = selDefi.value === "LIBRE" ? DEFI_LIBRE : (DEFIS.find(x => x.id === selDefi.value) || {});
@@ -566,16 +568,38 @@ document.getElementById("form").addEventListener("submit", async e => {
   if (!data.consentement) { err.textContent = "Merci de cocher la case de consentement."; err.hidden = false; return; }
 
   const btn = document.getElementById("f-send"); btn.disabled = true; btn.textContent = "Envoi en cours…";
+  let reponseRecue = false;   // le serveur a répondu : l'engagement est très probablement enregistré
+  let bloquerRenvoi = false;  // on garde le bouton inactif pour éviter un doublon
   try {
     if (!CONFIG.URL_API) throw new Error("Le formulaire n'est pas encore relié (URL_API vide).");
     const r = await fetch(CONFIG.URL_API, { method:"POST", body: JSON.stringify(data), headers: {"Content-Type":"text/plain;charset=utf-8"} });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.erreur || "Erreur inconnue");
-    afficherMerci(data, d);
-  } catch (ex) {
-    err.textContent = "L'envoi n'a pas abouti (" + ex.message + "). Vous pouvez réessayer, ou écrire à " + CONFIG.EMAIL_CONTACT + ".";
+    reponseRecue = true;
+    let j = null;
+    try { j = JSON.parse(await r.text()); } catch (_) { j = null; }
+
+    if (j && j.ok) { afficherMerci(data, d); return; }
+    if (j) throw new Error(j.erreur || "Erreur inconnue");   // refus explicite du script : rien n'a été enregistré
+
+    // Réponse reçue mais illisible (page HTML de Google au lieu du JSON). Le script s'est presque
+    // toujours exécuté jusqu'au bout : l'engagement est enregistré et les emails sont partis.
+    // On n'annonce donc pas un échec, et on bloque le renvoi pour ne pas créer de doublon.
+    bloquerRenvoi = true;
+    err.className = "err attente";
+    err.innerHTML = "<b>Votre engagement est bien parti.</b><br>Nous n'avons pas pu afficher l'écran de confirmation, "
+      + "mais il a normalement été enregistré : <b>merci de ne pas renvoyer le formulaire</b>. "
+      + "Vous allez recevoir un email de confirmation dans les prochaines minutes. "
+      + "Si rien ne vous parvient d'ici demain, écrivez-nous à " + CONFIG.EMAIL_CONTACT + " et nous vérifierons.";
     err.hidden = false;
-  } finally { btn.disabled = false; btn.textContent = "Envoyer mon engagement"; }
+    btn.textContent = "Engagement transmis";
+  } catch (ex) {
+    err.className = "err";
+    err.textContent = reponseRecue
+      ? "Votre engagement n'a pas pu être enregistré (" + ex.message + "). Vous pouvez réessayer, ou écrire à " + CONFIG.EMAIL_CONTACT + "."
+      : "L'envoi n'est pas parti, votre connexion a peut-être été interrompue. Rien n'a été enregistré : vous pouvez réessayer, ou écrire à " + CONFIG.EMAIL_CONTACT + ".";
+    err.hidden = false;
+  } finally {
+    if (!bloquerRenvoi) { btn.disabled = false; btn.textContent = "Envoyer mon engagement"; }
+  }
 });
 
 function afficherMerci(data, d){
